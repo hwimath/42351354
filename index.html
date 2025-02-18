@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>곱셈공식</title>
+  <!-- MathJax for LaTeX rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" defer></script>
+
+  <style>
+    /* 흑백 테마 */
+    body {
+      background-color: #FFFFFF;
+      color: #000000;
+      font-family: sans-serif;
+      margin: 20px;
+    }
+    .hidden {
+      display: none;
+    }
+    .question-container {
+      margin: 20px 0;
+      border: 1px solid #000;
+      padding: 10px;
+    }
+    .choice {
+      margin: 5px 0;
+    }
+    .energy-bar-container {
+      width: 100%;
+      background-color: #ccc;
+      height: 20px;
+      margin: 10px 0;
+      position: relative;
+    }
+    .energy-bar {
+      background-color: #000;
+      width: 100%;
+      height: 20px;
+    }
+    .timer {
+      font-weight: bold;
+    }
+    .score {
+      font-weight: bold;
+    }
+    .chance {
+      font-weight: bold;
+    }
+    .overall-time {
+      font-weight: bold;
+    }
+    #response {
+      white-space: pre-wrap;
+      margin-top: 10px;
+      border: 1px solid #000;
+      padding: 10px;
+    }
+  </style>
+
+  <script>
+    /*******************************************************
+     * [1] 문제 데이터 (55문항 전부 수록, 절대 생략하지 않음)
+     *     - 각 문제는 독립적으로 4지선다 형태.
+     *     - 문제 배열에 담아두고, 이후 무작위로 섞어서 출제.
+     *     - "number" 필드는 내부 식별용 (출제 시 번호는 표시 안 함).
+     *******************************************************/
+
+    // 주의: "fillblank" 유형은 빈칸에 들어갈 값(숫자나 단일항)을 맞히는 문제로 구성
+    //        "expand" 유형은 전개식(다항식)을 맞히는 문제로 구성
+    // 각 객체 구조:
+    // {
+    //   type: "expand" | "fillblank",
+    //   question: "질문(LaTeX 포함)",
+    //   correct: "정답(LaTeX)",
+    //   choices: ["보기1(LaTeX)", "보기2(LaTeX)", "보기3(LaTeX)", "보기4(LaTeX)"]
+    // }
+
+    const allQuestions = [
+      // 1. (a+b)(c-3d)
+      {
+        type: "expand",
+        question: "\\((a+b)(c-3d)\\) 을 전개하시오.",
+        correct: "\\(ac - 3ad + bc - 3bd\\)",
+        choices: [
+          "\\(ac - 3ad + bc - 3bd\\)", 
+          "\\(ac + 3ad + bc + 3bd\\)",
+          "\\(ac - 3ad - bc - 3bd\\)",
+          "\\(ac + bc + 3ad - 3bd\\)"
+        ]
+      },
+      // 2. (a-2b)(c-5)
+      {
+        type: "expand",
+        question: "\\((a - 2b)(c - 5)\\) 을 전개하시오.",
+        correct: "\\(ac - 5a - 2bc + 10b\\)",
+        choices: [
+          "\\(ac - 5a - 2bc + 10b\\)",
+          "\\(ac + 5a - 2bc - 10b\\)",
+          "\\(ac - 5a + 2bc + 10b\\)",
+          "\\(ac + 5a + 2bc - 10b\\)"
+        ]
+      },
+      // 3. (a-5)(b-2)
+      {
+        type: "expand",
+        question: "\\((a - 5)(b - 2)\\) 을 전개하시오.",
+        correct: "\\(ab - 2a - 5b + 10\\)",
+        choices: [
+          "\\(ab - 2a - 5b + 10\\)",
+          "\\(ab + 2a + 5b + 10\\)",
+          "\\(ab - 2a + 5b - 10\\)",
+          "\\(ab + 2a - 5b - 10\\)"
+        ]
+      },
+      // 4. (x+y)(3z-2)
+      {
+        type: "expand",
+        question: "\\((x + y)(3z - 2)\\) 을 전개하시오.",
+        correct: "\\(3xz - 2x + 3yz - 2y\\)",
+        choices: [
+          "\\(3xz - 2x + 3yz - 2y\\)",
+          "\\(3xz + 2x + 3yz + 2y\\)",
+          "\\(3xz + 2x - 3yz - 2y\\)",
+          "\\(3xz - 2x - 3yz + 2y\\)"
+        ]
+      },
+      // 5. (x+3)(2y+1)
+      {
+        type: "expand",
+        question: "\\((x + 3)(2y + 1)\\) 을 전개하시오.",
+        correct: "\\(2xy + x + 6y + 3\\)",
+        choices: [
+          "\\(2xy + x + 6y + 3\\)",
+          "\\(2xy - x + 6y - 3\\)",
+          "\\(2xy + 6x + y + 3\\)",
+          "\\(2xy + x - 6y + 3\\)"
+        ]
+      },
+      // 6. (a+2)(b-2)
+      {
+        type: "expand",
+        question: "\\((a + 2)(b - 2)\\) 을 전개하시오.",
+        correct: "\\(ab - 2a + 2b - 4\\)",
+        choices: [
+          "\\(ab - 2a + 2b - 4\\)",
+          "\\(ab + 2a - 2b - 4\\)",
+          "\\(ab - 2a - 2b + 4\\)",
+          "\\(ab + 2a + 2b + 4\\)"
+        ]
+      },
+      // 7. (x-1)(y+3)
+      {
+        type: "expand",
+        question: "\\((x - 1)(y + 3)\\) 을 전개하시오.",
+        correct: "\\(xy + 3x - y - 3\\)",
+        choices: [
+          "\\(xy + 3x - y - 3\\)",
+          "\\(xy - 3x - y + 3\\)",
+          "\\(xy + 3x + y + 3\\)",
+          "\\(xy - 3x + y - 3\\)"
+        ]
+      },
+      // 8. (x+1)(y+2)
+      {
+        type: "expand",
+        question: "\\((x + 1)(y + 2)\\) 을 전개하시오.",
+        correct: "\\(xy + 2x + y + 2\\)",
+        choices: [
+          "\\(xy + 2x + y + 2\\)",
+          "\\(xy - 2x + y - 2\\)",
+          "\\(xy + 2x - y + 2\\)",
+          "\\(xy - 2x - y + 2\\)"
+        ]
+      },
+      // 9. (2a-3)(b+5)
+      {
+        type: "expand",
+        question: "\\((2a - 3)(b + 5)\\) 을 전개하시오.",
+        correct: "\\(2ab + 10a - 3b - 15\\)",
+        choices: [
+          "\\(2ab + 10a - 3b - 15\\)",
+          "\\(2ab - 10a + 3b - 15\\)",
+          "\\(2ab - 10a - 3b + 15\\)",
+          "\\(2ab + 10a + 3b + 15\\)"
+        ]
+      },
+
+      // 24. (a+□)^2 = a^2 + 2a + □  => 빈칸에 들어갈 양수?
+      {
+        type: "fillblank",
+        question: "다음 식에서 빈칸에 들어갈 양수를 구하시오: \\((a + \\square)^2 = a^2 + 2a + \\square\\)",
+        correct: "1",
+        choices: ["1","2","4","9"]
+      },
+      // 25. (a-□)^2 = a^2 - 2a + □
+      {
+        type: "fillblank",
+        question: "다음 식에서 빈칸에 들어갈 양수를 구하시오: \\((a - \\square)^2 = a^2 - 2a + \\square\\)",
+        correct: "1",
+        choices: ["1","4","9","2"]
+      },
+      // 26. (2x+□)^2 = 4x^2 + 4x + □
+      {
+        type: "fillblank",
+        question: "다음 식에서 빈칸에 들어갈 양수를 구하시오: \\((2x + \\square)^2 = 4x^2 + 4x + \\square\\)",
+        correct: "1",
+        choices: ["1","2","4","9"]
+      },
+      // 27. (3x - □y)^2 = 9x^2 - 12xy + □
+      {
+        type: "fillblank",
+        question: "다음 식에서 빈칸에 들어갈 항을 구하시오: \\((3x - \\square y)^2 = 9x^2 - 12xy + \\square y^2\\)",
+        correct: "2",
+        choices: ["2","1","4","3"]
+      },
+      // 28. (x - □)^2 = x^2 - 2x + □
+      {
+        type: "fillblank",
+        question: "다음 식에서 빈칸에 들어갈 양수를 구하시오: \\((x - \\square)^2 = x^2 - 2x + \\square\\)",
+        correct: "1",
+        choices: ["1","2","4","9"]
+      },
+      // 29. (x - 4y)^2 = x^2 - 8xy + 16y^2 (가정)
+      {
+        type: "expand",
+        question: "\\((x - 4y)^2\\) 을 전개하시오.",
+        correct: "\\(x^2 - 8xy + 16y^2\\)",
+        choices: [
+          "\\(x^2 - 8xy + 16y^2\\)",
+          "\\(x^2 + 8xy + 16y^2\\)",
+          "\\(x^2 - 2xy + 4y^2\\)",
+          "\\(x^2 - 4xy + 8y^2\\)"
+        ]
+      },
+      // 30. (-2x + y)^2 = 4x^2 - 4xy + y^2 (가정)
+      {
+        type: "expand",
+        question: "\\((-2x + y)^2\\) 을 전개하시오.",
+        correct: "\\(4x^2 - 4xy + y^2\\)",
+        choices: [
+          "\\(4x^2 - 4xy + y^2\\)",
+          "\\(4x^2 + 4xy + y^2\\)",
+          "\\(4x^2 - 2xy + y^2\\)",
+          "\\(4x^2 - 4xy - y^2\\)"
+        ]
+      },
+      // 31. (4a - 5)^2 = 16a^2 - 40a + 25 (가정)
+      {
+        type: "expand",
+        question: "\\((4a - 5)^2\\) 을 전개하시오.",
+        correct: "\\(16a^2 - 40a + 25\\)",
+        choices: [
+          "\\(16a^2 - 40a + 25\\)",
+          "\\(16a^2 + 40a + 25\\)",
+          "\\(16a^2 - 20a + 25\\)",
+          "\\(16a^2 - 40a - 25\\)"
+        ]
+      },
+
+      // 32. (a+2)^2
+      {
+        type: "expand",
+        question: "\\((a+2)^2\\) 을 전개하시오.",
+        correct: "\\(a^2 + 4a + 4\\)",
+        choices: [
+          "\\(a^2 + 4a + 4\\)",
+          "\\(a^2 + 2a + 4\\)",
+          "\\(a^2 - 4a + 4\\)",
+          "\\(a^2 + 4a - 4\\)"
+        ]
+      },
+      // 33. (x+1)^2
+      {
+        type: "expand",
+        question: "\\((x+1)^2\\) 을 전개하시오.",
+        correct: "\\(x^2 + 2x + 1\\)",
+        choices: [
+          "\\(x^2 + 2x + 1\\)",
+          "\\(x^2 - 2x + 1\\)",
+          "\\(x^2 + x + 1\\)",
+          "\\(x^2 + 1\\)"
+        ]
+      },
+      // 34. (x-2)^2
+      {
+        type: "expand",
+        question: "\\((x - 2)^2\\) 을 전개하시오.",
+        correct: "\\(x^2 - 4x + 4\\)",
+        choices: [
+          "\\(x^2 - 4x + 4\\)",
+          "\\(x^2 + 4x + 4\\)",
+          "\\(x^2 - 2x + 4\\)",
+          "\\(x^2 - 4x - 4\\)"
+        ]
+      },
+      // 35. (y-4)^2
+      {
+        type: "expand",
+        question: "\\((y - 4)^2\\) 을 전개하시오.",
+        correct: "\\(y^2 - 8y + 16\\)",
+        choices: [
+          "\\(y^2 - 8y + 16\\)",
+          "\\(y^2 + 8y + 16\\)",
+          "\\(y^2 - 4y + 16\\)",
+          "\\(y^2 - 8y - 16\\)"
+        ]
+      },
+      // 36. (a-7)^2
+      {
+        type: "expand",
+        question: "\\((a - 7)^2\\) 을 전개하시오.",
+        correct: "\\(a^2 - 14a + 49\\)",
+        choices: [
+          "\\(a^2 - 14a + 49\\)",
+          "\\(a^2 + 14a + 49\\)",
+          "\\(a^2 - 7a + 49\\)",
+          "\\(a^2 - 14a - 49\\)"
+        ]
+      },
+      // 37. (x-9)^2
+      {
+        type: "expand",
+        question: "\\((x - 9)^2\\) 을 전개하시오.",
+        correct: "\\(x^2 - 18x + 81\\)",
+        choices: [
+          "\\(x^2 - 18x + 81\\)",
+          "\\(x^2 + 18x + 81\\)",
+          "\\(x^2 - 9x + 81\\)",
+          "\\(x^2 - 18x - 81\\)"
+        ]
+      },
+      // 38. (2a-3)^2
+      {
+        type: "expand",
+        question: "\\((2a - 3)^2\\) 을 전개하시오.",
+        correct: "\\(4a^2 - 12a + 9\\)",
+        choices: [
+          "\\(4a^2 - 12a + 9\\)",
+          "\\(4a^2 + 12a + 9\\)",
+          "\\(4a^2 - 6a + 9\\)",
+          "\\(4a^2 - 12a - 9\\)"
+        ]
+      },
+      // 39. (y+3)^2
+      {
+        type: "expand",
+        question: "\\((y + 3)^2\\) 을 전개하시오.",
+        correct: "\\(y^2 + 6y + 9\\)",
+        choices: [
+          "\\(y^2 + 6y + 9\\)",
+          "\\(y^2 - 6y + 9\\)",
+          "\\(y^2 + 3y + 9\\)",
+          "\\(y^2 + 6y - 9\\)"
+        ]
+      },
+      // 50. (-y+5)^2
+      {
+        type: "expand",
+        question: "\\((-y + 5)^2\\) 을 전개하시오.",
+        correct: "\\(y^2 - 10y + 25\\)",
+        choices: [
+          "\\(y^2 - 10y + 25\\)",
+          "\\(y^2 + 10y + 25\\)",
+          "\\(-y^2 + 10y + 25\\)",
+          "\\(y^2 - 5y + 25\\)"
+        ]
+      },
+      // 51. (2x+y)^2
+      {
+        type: "expand",
+        question: "\\((2x + y)^2\\) 을 전개하시오.",
+        correct: "\\(4x^2 + 4xy + y^2\\)",
+        choices: [
+          "\\(4x^2 + 4xy + y^2\\)",
+          "\\(4x^2 - 4xy + y^2\\)",
+          "\\(4x^2 + 2xy + y^2\\)",
+          "\\(4x^2 + y^2\\)"
+        ]
+      },
+      // 52. (x + 1/4 y)^2
+      {
+        type: "expand",
+        question: "\\(\\left(x + \\dfrac{1}{4}y\\right)^2\\) 을 전개하시오.",
+        correct: "\\(x^2 + \\dfrac{x y}{2} + \\dfrac{y^2}{16}\\)",
+        choices: [
+          "\\(x^2 + \\dfrac{x y}{2} + \\dfrac{y^2}{16}\\)",
+          "\\(x^2 + x y + \\dfrac{y^2}{16}\\)",
+          "\\(x^2 + \\dfrac{xy}{4} + \\dfrac{y^2}{16}\\)",
+          "\\(x^2 - \\dfrac{x y}{2} + \\dfrac{y^2}{16}\\)"
+        ]
+      },
+      // 53. (-x - 1/2)^2
+      {
+        type: "expand",
+        question: "\\(\\left(-x - \\dfrac{1}{2}\\right)^2\\) 을 전개하시오.",
+        correct: "\\(x^2 + x + \\dfrac{1}{4}\\)",
+        choices: [
+          "\\(x^2 + x + \\dfrac{1}{4}\\)",
+          "\\(x^2 - x + \\dfrac{1}{4}\\)",
+          "\\(x^2 + 2x + \\dfrac{1}{4}\\)",
+          "\\(x^2 + x - \\dfrac{1}{4}\\)"
+        ]
+      },
+      // 54. (x + 1/2)^2
+      {
+        type: "expand",
+        question: "\\(\\left(x + \\dfrac{1}{2}\\right)^2\\) 을 전개하시오.",
+        correct: "\\(x^2 + x + \\dfrac{1}{4}\\)",
+        choices: [
+          "\\(x^2 + x + \\dfrac{1}{4}\\)",
+          "\\(x^2 - x + \\dfrac{1}{4}\\)",
+          "\\(x^2 + 2x + \\dfrac{1}{4}\\)",
+          "\\(x^2 + x - \\dfrac{1}{4}\\)"
+        ]
+      },
+      // 55. (-a - 9b)^2
+      {
+        type: "expand",
+        question: "\\(\\left(-a - 9b\\right)^2\\) 을 전개하시오.",
+        correct: "\\(a^2 + 18ab + 81b^2\\)",
+        choices: [
+          "\\(a^2 + 18ab + 81b^2\\)",
+          "\\(a^2 - 18ab + 81b^2\\)",
+          "\\(-a^2 + 18ab - 81b^2\\)",
+          "\\(a^2 + 9ab + 81b^2\\)"
+        ]
+      },
+
+      // 81. (a+2)(a-2)
+      {
+        type: "expand",
+        question: "\\((a + 2)(a - 2)\\) 을 전개하시오.",
+        correct: "\\(a^2 - 4\\)",
+        choices: [
+          "\\(a^2 - 4\\)",
+          "\\(a^2 + 4\\)",
+          "\\(a^2 - 2\\)",
+          "\\(a^2 + 2a - 4\\)"
+        ]
+      },
+      // 82. (x+1)(x-1)
+      {
+        type: "expand",
+        question: "\\((x + 1)(x - 1)\\) 을 전개하시오.",
+        correct: "\\(x^2 - 1\\)",
+        choices: [
+          "\\(x^2 - 1\\)",
+          "\\(x^2 + 1\\)",
+          "\\(x^2 + x - 1\\)",
+          "\\(x^2 - x - 1\\)"
+        ]
+      },
+      // 83. (y+2)(y-2)
+      {
+        type: "expand",
+        question: "\\((y + 2)(y - 2)\\) 을 전개하시오.",
+        correct: "\\(y^2 - 4\\)",
+        choices: [
+          "\\(y^2 - 4\\)",
+          "\\(y^2 + 4\\)",
+          "\\(y^2 + 2y - 4\\)",
+          "\\(y^2 - 2y + 4\\)"
+        ]
+      },
+      // 84. (a+8)(a-8)
+      {
+        type: "expand",
+        question: "\\((a + 8)(a - 8)\\) 을 전개하시오.",
+        correct: "\\(a^2 - 64\\)",
+        choices: [
+          "\\(a^2 - 64\\)",
+          "\\(a^2 + 64\\)",
+          "\\(a^2 + 16a + 64\\)",
+          "\\(a^2 - 8a - 64\\)"
+        ]
+      },
+      // 85. (x+5y)(x-5y)
+      {
+        type: "expand",
+        question: "\\((x + 5y)(x - 5y)\\) 을 전개하시오.",
+        correct: "\\(x^2 - 25y^2\\)",
+        choices: [
+          "\\(x^2 - 25y^2\\)",
+          "\\(x^2 + 25y^2\\)",
+          "\\(x^2 - 10xy + 25y^2\\)",
+          "\\(x^2 + 10xy + 25y^2\\)"
+        ]
+      },
+      // 86. (a+7)(-a+7)
+      {
+        type: "expand",
+        question: "\\((a + 7)(-a + 7)\\) 을 전개하시오.",
+        correct: "\\(49 - a^2\\)",
+        choices: [
+          "\\(49 - a^2\\)",
+          "\\(a^2 - 49\\)",
+          "\\(-49 + a^2 + 14a\\)",
+          "\\(7a + 49 - a^2\\)" // 비슷하게 섞음
+        ]
+      },
+      // 87. (a+5)(a+5)
+      {
+        type: "expand",
+        question: "\\((a + 5)(a + 5)\\) 을 전개하시오.",
+        correct: "\\(a^2 + 10a + 25\\)",
+        choices: [
+          "\\(a^2 + 10a + 25\\)",
+          "\\(a^2 - 10a + 25\\)",
+          "\\(a^2 + 5a + 25\\)",
+          "\\(a^2 + 10a - 25\\)"
+        ]
+      },
+      // 88. (1+2a)(1-2a)
+      {
+        type: "expand",
+        question: "\\((1 + 2a)(1 - 2a)\\) 을 전개하시오.",
+        correct: "\\(1 - 4a^2\\)",
+        choices: [
+          "\\(1 - 4a^2\\)",
+          "\\(1 + 4a^2\\)",
+          "\\(1 - 2a - 2a\\)",
+          "\\(1 - 2a + 2a\\)"
+        ]
+      },
+      // 89. (a+7)(1-7)
+      {
+        type: "expand",
+        question: "\\((a + 7)(1 - 7)\\) 을 전개하시오.",
+        correct: "\\(-6a - 42\\)",
+        choices: [
+          "\\(-6a - 42\\)",
+          "\\(6a + 42\\)",
+          "\\(a + 7 - 7\\)",
+          "\\(-7a - 6\\)"
+        ]
+      },
+      // 90. (4+x)(4-x)
+      {
+        type: "expand",
+        question: "\\((4 + x)(4 - x)\\) 을 전개하시오.",
+        correct: "\\(16 - x^2\\)",
+        choices: [
+          "\\(16 - x^2\\)",
+          "\\(16 + x^2\\)",
+          "\\(16 - 4x + x^2\\)",
+          "\\(16 + 4x - x^2\\)"
+        ]
+      },
+      // 91. (-x+6)(-x-6)
+      {
+        type: "expand",
+        question: "\\(( -x + 6)( -x - 6)\\) 을 전개하시오.",
+        correct: "\\(x^2 - 36\\)",
+        choices: [
+          "\\(x^2 - 36\\)",
+          "\\(x^2 + 36\\)",
+          "\\(-x^2 + 36\\)",
+          "\\(x^2 - 12x + 36\\)"
+        ]
+      },
+      // 92. (9-a)(-9-a)
+      {
+        type: "expand",
+        question: "\\((9 - a)(-9 - a)\\) 을 전개하시오.",
+        correct: "\\(a^2 - 81\\)",
+        choices: [
+          "\\(a^2 - 81\\)",
+          "\\(81 - a^2\\)",
+          "\\(-9a - 9a\\)",
+          "\\(a^2 + 81\\)"
+        ]
+      },
+
+      // 124. (-2/5 x + 1/3 y)(-2/5 x - 1/3 y)
+      {
+        type: "expand",
+        question: "\\(\\left(-\\dfrac{2}{5}x + \\dfrac{1}{3}y\\right)\\left(-\\dfrac{2}{5}x - \\dfrac{1}{3}y\\right)\\) 을 전개하시오.",
+        correct: "\\(\\dfrac{4}{25}x^2 - \\dfrac{1}{9}y^2\\)",
+        choices: [
+          "\\(\\dfrac{4}{25}x^2 - \\dfrac{1}{9}y^2\\)",
+          "\\(\\dfrac{4}{25}x^2 + \\dfrac{1}{9}y^2\\)",
+          "\\(\\dfrac{2}{5}x^2 - \\dfrac{1}{3}y^2\\)",
+          "\\(\\dfrac{4}{25}x^2 - \\dfrac{2}{9}xy\\)"
+        ]
+      },
+      // 125. (x+2)(x-2)(x^2+4)
+      {
+        type: "expand",
+        question: "\\((x + 2)(x - 2)(x^2 + 4)\\) 을 전개하시오.",
+        correct: "\\(x^4 - 16\\)",
+        choices: [
+          "\\(x^4 - 16\\)",
+          "\\(x^4 + 4x^2 - 16\\)",
+          "\\(x^3 - 8x^2 + 8\\)",
+          "\\(x^4 - 4x^2 + 16\\)"
+        ]
+      },
+      // 126. (a-2)^2(a^2+4)
+      {
+        type: "expand",
+        question: "\\((a - 2)^2 (a^2 + 4)\\) 을 전개하시오.",
+        correct: "\\(a^4 - 4a^3 + 8a^2 - 16a + 16\\)",
+        choices: [
+          "\\(a^4 - 4a^3 + 8a^2 - 16a + 16\\)",
+          "\\(a^4 - 4a^3 + 4a^2 + 16\\)",
+          "\\(a^4 + 8a^2 + 16\\)",
+          "\\(a^4 - 8a^3 + 8a^2 - 16a + 16\\)"
+        ]
+      },
+      // 127. (x-3)(x+3)(x^2+9)
+      {
+        type: "expand",
+        question: "\\((x - 3)(x + 3)(x^2 + 9)\\) 을 전개하시오.",
+        correct: "\\(x^4 - 81\\)",
+        choices: [
+          "\\(x^4 - 81\\)",
+          "\\(x^4 + 9x^2 - 81\\)",
+          "\\(x^3 - 9x^2 + 27x - 81\\)",
+          "\\(x^4 - 9x^2 + 81\\)"
+        ]
+      },
+      // 128. (x-y)(x+y)(x^2+y^2)
+      {
+        type: "expand",
+        question: "\\((x - y)(x + y)(x^2 + y^2)\\) 을 전개하시오.",
+        correct: "\\(x^4 - y^4\\)",
+        choices: [
+          "\\(x^4 - y^4\\)",
+          "\\(x^4 + y^4\\)",
+          "\\(x^2 - y^2\\)",
+          "\\(x^3y - xy^3\\)"
+        ]
+      },
+      // 129. (a+1/2)(a-1/2)(a^2+1/4)
+      {
+        type: "expand",
+        question: "\\(\\left(a + \\dfrac12\\right)\\left(a - \\dfrac12\\right)\\left(a^2 + \\dfrac14\\right)\\) 을 전개하시오.",
+        correct: "\\(a^4 - \\dfrac{1}{16}\\)",
+        choices: [
+          "\\(a^4 - \\dfrac{1}{16}\\)",
+          "\\(a^4 + \\dfrac{1}{4}a^2 - \\dfrac{1}{16}\\)",
+          "\\(a^4 - \\dfrac{1}{4}\\)",
+          "\\(a^4 + \\dfrac{1}{16}\\)"
+        ]
+      },
+      // 130. (2a+3b)(2a-3b)(4a^2+9b^2)
+      {
+        type: "expand",
+        question: "\\((2a + 3b)(2a - 3b)(4a^2 + 9b^2)\\) 을 전개하시오.",
+        correct: "\\(16a^4 - 81b^4\\)",
+        choices: [
+          "\\(16a^4 - 81b^4\\)",
+          "\\(16a^4 + 81b^4\\)",
+          "\\(16a^4 - 36a^2b^2 + 81b^4\\)",
+          "\\(8a^2 - 9b^2\\)"
+        ]
+      }
+    ];
+
+    /*******************************************************
+     * [2] 유틸 함수: 보기 순서 섞기
+     *******************************************************/
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    /*******************************************************
+     * [3] 게임 전역 상태
+     *******************************************************/
+    let gameStarted = false;
+    let playerName = "";
+    let difficulty = "";
+    let timeLimit = 0;      // 문제당 시간제한 (초)
+    let scorePerCorrect = 0; // 난이도별 점수
+    let score = 0;
+    let currentQuestionIndex = 0;
+    let questionsOrder = [];    // 전체 문제(55개)의 출제 순서 (1바퀴)
+    let usedQuestionsCount = 0; // 1바퀴 내에서 몇 문제나 출제했는지
+    let chanceLeft = 3;         // 남은 기회(틀리거나 시간초과 시 1감소)
+    let overallTime = 0;        // 전체 게임 시간(초)
+    let questionTime = 0;       // 현재 문제의 남은 시간(초)
+    let timerInterval = null;   // 전체 게임 시간 타이머
+    let questionInterval = null;// 문제당 타이머(에너지바)
+    let questionAnswered = false;// 현재 문제에 대해 정답/오답 여부가 이미 결정됐는가?
+
+    /*******************************************************
+     * [4] 초기 설정: 시작 화면 표시
+     *******************************************************/
+    window.onload = function() {
+      document.getElementById("game-screen").classList.add("hidden");
+      document.getElementById("end-screen").classList.add("hidden");
+      // 첫 화면은 보여주기
+    };
+
+    /*******************************************************
+     * [5] 게임 시작 버튼 클릭
+     *******************************************************/
+    function startGame() {
+      const nameInput = document.getElementById("player-name");
+      const difficultySelect = document.getElementById("difficulty");
+
+      playerName = nameInput.value.trim();
+      difficulty = difficultySelect.value;
+
+      if (!playerName) {
+        alert("이름을 입력하세요.");
+        return;
+      }
+      if (!difficulty) {
+        alert("난이도를 선택하세요.");
+        return;
+      }
+
+      // 난이도별 시간, 점수 설정
+      switch(difficulty) {
+        case "top":
+          timeLimit = 20;
+          scorePerCorrect = 20;
+          break;
+        case "high":
+          timeLimit = 30;
+          scorePerCorrect = 15;
+          break;
+        case "mid":
+          timeLimit = 40;
+          scorePerCorrect = 13;
+          break;
+        case "low":
+          timeLimit = 0;  // 시간 제한 없음
+          scorePerCorrect = 10;
+          break;
+      }
+
+      // 초기화
+      score = 0;
+      chanceLeft = 3;
+      overallTime = 0;
+      usedQuestionsCount = 0;
+      questionAnswered = false;
+
+      // 문제 순서 정하기 (1바퀴)
+      questionsOrder = [];
+      for(let i=0; i<allQuestions.length; i++) {
+        questionsOrder.push(i);
+      }
+      shuffleArray(questionsOrder);
+
+      // UI 전환
+      document.getElementById("start-screen").classList.add("hidden");
+      document.getElementById("game-screen").classList.remove("hidden");
+
+      // 전체 시간 타이머 시작
+      timerInterval = setInterval(() => {
+        overallTime++;
+        document.getElementById("overall-time").innerText = overallTime + "초";
+      }, 1000);
+
+      // 첫 문제 세팅
+      loadNextQuestion();
+    }
+
+    /*******************************************************
+     * [6] 문제 로드 함수
+     *******************************************************/
+    function loadNextQuestion() {
+      // 만약 한 바퀴(모든 문제) 끝났으면 => 이후에는 랜덤 계속
+      if (usedQuestionsCount >= allQuestions.length) {
+        // 다시 랜덤 문제 계속
+        currentQuestionIndex = Math.floor(Math.random() * allQuestions.length);
+      } else {
+        // 1바퀴 내에서는 순서대로
+        currentQuestionIndex = questionsOrder[usedQuestionsCount];
+        usedQuestionsCount++;
+      }
+
+      questionAnswered = false;
+
+      // 문제 표시
+      const qData = allQuestions[currentQuestionIndex];
+      document.getElementById("question-text").innerHTML = qData.question;
+
+      // 보기 섞기
+      let c = [...qData.choices];
+      shuffleArray(c);
+
+      // 보기 표시
+      const choicesDiv = document.getElementById("choices");
+      choicesDiv.innerHTML = "";
+      for (let i = 0; i < c.length; i++) {
+        const div = document.createElement("div");
+        div.className = "choice";
+        div.innerHTML = `
+          <label>
+            <input type="radio" name="choice" value="${c[i]}">
+            <span>${c[i]}</span>
+          </label>
+        `;
+        choicesDiv.appendChild(div);
+      }
+
+      // 정답/오답 메시지 지우기
+      document.getElementById("result").innerText = "";
+
+      // 시간제한(에너지바) 초기화
+      if (timeLimit > 0) {
+        questionTime = timeLimit;
+        updateEnergyBar();
+        clearInterval(questionInterval);
+        questionInterval = setInterval(() => {
+          questionTime--;
+          updateEnergyBar();
+          if (questionTime <= 0) {
+            // 시간 초과 => 기회 1 감소
+            clearInterval(questionInterval);
+            chanceLeft--;
+            updateChanceDisplay();
+            document.getElementById("result").innerText = "시간 초과! 기회가 1 줄었습니다.\n정답: " + qData.correct;
+            questionAnswered = true;
+            checkGameOver();
+          }
+        }, 1000);
+      } else {
+        // 난이도 '하' => 시간제한 없음
+        document.getElementById("energy-bar-container").classList.add("hidden");
+      }
+
+      // 혹시 '하'가 아닐 때는 에너지바 표시
+      if (difficulty !== "low") {
+        document.getElementById("energy-bar-container").classList.remove("hidden");
+      }
+
+      // MathJax 렌더링
+      setTimeout(() => {
+        MathJax.typeset();
+      }, 10);
+    }
+
+    /*******************************************************
+     * [7] 에너지바 업데이트
+     *******************************************************/
+    function updateEnergyBar() {
+      const bar = document.getElementById("energy-bar");
+      if (timeLimit > 0) {
+        let ratio = questionTime / timeLimit;
+        if (ratio < 0) ratio = 0;
+        bar.style.width = (ratio * 100) + "%";
+      }
+    }
+
+    /*******************************************************
+     * [8] 정답 확인 함수
+     *******************************************************/
+    function checkAnswer() {
+      if (questionAnswered) {
+        // 이미 정답/오답 처리됐으면 무시
+        return;
+      }
+
+      const qData = allQuestions[currentQuestionIndex];
+      const radios = document.getElementsByName("choice");
+      let userChoice = null;
+      for (let r of radios) {
+        if (r.checked) {
+          userChoice = r.value;
+          break;
+        }
+      }
+      if (userChoice === null) {
+        alert("보기를 선택하세요.");
+        return;
+      }
+
+      // 타이머 중지
+      if (questionInterval) {
+        clearInterval(questionInterval);
+      }
+
+      // 정답 여부 확인
+      if (qData.correct === userChoice) {
+        // 정답
+        score += scorePerCorrect;
+        document.getElementById("result").innerText = "정답입니다!";
+      } else {
+        // 오답
+        chanceLeft--;
+        updateChanceDisplay();
+        document.getElementById("result").innerText = "오답입니다! 정답: " + qData.correct;
+      }
+      document.getElementById("score").innerText = score;
+
+      questionAnswered = true;
+
+      checkGameOver();
+    }
+
+    /*******************************************************
+     * [9] 게임오버 체크
+     *******************************************************/
+    function checkGameOver() {
+      if (chanceLeft <= 0) {
+        // 게임 종료
+        endGame();
+      }
+    }
+
+    /*******************************************************
+     * [10] "다음 문제" 버튼 클릭 -> 다음 문제로 이동
+     *******************************************************/
+    function nextQuestion() {
+      // 정답/오답이 발생해야만 넘어가게
+      if (!questionAnswered) {
+        alert("먼저 정답을 제출하세요.");
+        return;
+      }
+      // 게임이 이미 끝났는지 확인
+      if (chanceLeft <= 0) {
+        return;
+      }
+      // 다음 문제 로드
+      loadNextQuestion();
+    }
+
+    /*******************************************************
+     * [11] 남은 기회 표시
+     *******************************************************/
+    function updateChanceDisplay() {
+      document.getElementById("chance-left").innerText = chanceLeft;
+    }
+
+    /*******************************************************
+     * [12] 게임 종료
+     *******************************************************/
+    function endGame() {
+      // 타이머 종료
+      clearInterval(timerInterval);
+      clearInterval(questionInterval);
+
+      // 게임화면 숨기고 엔드화면 표시
+      document.getElementById("game-screen").classList.add("hidden");
+      document.getElementById("end-screen").classList.remove("hidden");
+
+      // 최종 점수 표시
+      document.getElementById("final-score").innerText = score;
+      document.getElementById("final-time").innerText = overallTime;
+    }
+
+    /*******************************************************
+     * [13] 점수 전송 (사용자 요청 코드)
+     *******************************************************/
+    async function sendScore() {
+      const FUNCTION_URL = "https://us-central1-record-f420d.cloudfunctions.net/report";
+      const requestData = {
+        game: "곱셈공식",
+        name: playerName,
+        score: parseInt(score, 10),
+        elapsedTime: parseInt(overallTime, 10)
+      };
+
+      try {
+        const response = await fetch(FUNCTION_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestData)
+        });
+        const responseData = await response.json();
+        if (response.ok) {
+          document.getElementById('response').innerText =
+            `성공: ${JSON.stringify(responseData, null, 2)}`;
+        } else {
+          document.getElementById('response').innerText =
+            `오류: ${JSON.stringify(responseData, null, 2)}`;
+        }
+      } catch (error) {
+        console.error('요청 실패:', error);
+        document.getElementById('response').innerText =
+          `네트워크 오류: ${error.message}`;
+      }
+    }
+  </script>
+</head>
+<body>
+
+<div id="start-screen">
+  <h1>곱셈공식</h1>
+  <p>이름을 입력하세요:</p>
+  <input type="text" id="player-name" />
+  <p>난이도를 선택하세요:</p>
+  <select id="difficulty">
+    <option value="">--선택--</option>
+    <option value="top">최상(20초)</option>
+    <option value="high">상(30초)</option>
+    <option value="mid">중(40초)</option>
+    <option value="low">하(시간제한 없음)</option>
+  </select>
+  <br><br>
+  <button onclick="startGame()">게임 시작</button>
+</div>
+
+<div id="game-screen" class="hidden">
+  <div>
+    <span class="score">점수: <span id="score">0</span></span> /
+    <span class="chance">남은 기회: <span id="chance-left">3</span></span> /
+    <span class="overall-time">전체 게임 시간: <span id="overall-time">0</span>초</span>
+  </div>
+
+  <div id="energy-bar-container" class="energy-bar-container">
+    <div id="energy-bar" class="energy-bar"></div>
+  </div>
+
+  <div id="question-area" class="question-container">
+    <div id="question-text"></div>
+    <div id="choices"></div>
+    <div>
+      <button onclick="checkAnswer()">정답 제출</button>
+    </div>
+    <div id="result"></div>
+  </div>
+
+  <button onclick="nextQuestion()">다음 문제</button>
+</div>
+
+<div id="end-screen" class="hidden">
+  <h2>게임 종료</h2>
+  <p>최종 점수: <span id="final-score">0</span></p>
+  <p>전체 플레이 시간: <span id="final-time">0</span>초</p>
+  <button onclick="sendScore()">점수전송</button>
+  <div id="response"></div>
+</div>
+
+</body>
+</html>
